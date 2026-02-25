@@ -290,7 +290,7 @@ const App = () => {
             >
               {MONTHS.map(m => <option key={m} value={m}>{m}</option>)}
             </select>
-            <p className="text-slate-400 text-xs font-semibold mt-1">Viewing fiscal records for 2024</p>
+            <p className="text-slate-400 text-xs font-semibold mt-1">Contribution data</p>
           </div>
 
           <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm group hover:border-emerald-200 transition-all">
