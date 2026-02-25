@@ -275,7 +275,7 @@ const App = () => {
             >
               {MONTHS.map(m => <option key={m} value={m}>{m}</option>)}
             </select>
-            <p className="text-slate-400 text-[10px] font-semibold mt-1">Viewing fiscal records for 2024</p>
+            <p className="text-slate-400 text-[10px] font-semibold mt-1">Contribution data</p>
           </div>
 
           <div className="bg-white p-5 sm:p-6 rounded-[1.5rem] sm:rounded-[2rem] border border-slate-100 shadow-sm group hover:border-emerald-200 transition-all">
@@ -405,7 +405,7 @@ const App = () => {
           <div className="relative bg-white rounded-[1.5rem] sm:rounded-[2rem] border border-slate-100 shadow-xl overflow-hidden group">
             <div className="absolute top-4 right-6 flex items-center gap-2 text-[10px] font-bold text-indigo-400 sm:hidden animate-pulse pointer-events-none">
               <ChevronsLeftRight className="h-3 w-3" />
-              <span>Scroll for months</span>
+              <span></span>
             </div>
             <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-slate-200">
               <table className="w-full text-left border-collapse min-w-[800px] sm:min-w-[1200px]">
