@@ -65,7 +65,7 @@ const RAW_NAMES = [
   "AMIRA MUHAMMAD", "KHALIPHA MUHAMMAD", "MUSLIM SANI", "KAUTHAR SANI", "MUHAMMAD SANI",
   "BINTA ABDULSALAM", "UMMUL KHAIR MUKHTAR", "AISHA MUKHTAR (HAJIYA)", "ZAINAB MUKHTAR (AMIRA)",
   "ZAHARAU MUKHTAR", "MUHAMMAD MUKHTAR", "JAMILA ABDULSALAM", "KHADIJA BELLO (NANA)",
-  "AHMAD BELLO", "HAFSAT BELLO", "SURAYYA BELLO", "SADIK ABDULSALAM", "UMMI ABDULSALAM",
+  "AHMAD BELLO", "HAFSAT BELLO", "SURAYYA BELLO", "SADIK ABDUSSALAM", "UMMI ABDULSALAM",
   "HAFSAT SANI", "ABULKHAIR SANI", "MUHAMMAD SANI", "ZAHARAU ABDULSALAM (ANTY QARAMA)",
   "HASSAN MUHAMMAD", "HUSSAIN MUHAMMAD", "NAJA ABDULSALAM", "AHMAD ISMAIL", "ALIYU ISMAIL",
   "MUKHTAR ISMAIL", "RAHMA ABDULSALAM", "ALAMEEN ABDULSALAM", "NABILA BELLO", "NABIL BELLO",
@@ -136,8 +136,9 @@ const App = () => {
     setTimeout(() => setNotification(null), 3000);
   };
 
-  const filteredContributors = useMemo(() => {
-    return CONTRIBUTORS.filter(person => {
+  // Dashboard Sorting: Paid jump to top
+  const dashboardContributors = useMemo(() => {
+    const filtered = CONTRIBUTORS.filter(person => {
       const matchesSearch = person.name.toLowerCase().includes(searchQuery.toLowerCase());
       const personData = data[person.id] || {};
       const amount = personData[currentMonth] || 0;
@@ -146,7 +147,23 @@ const App = () => {
       if (statusFilter === 'unpaid') matchesFilter = amount === 0;
       return matchesSearch && matchesFilter;
     });
+
+    // Re-organize: Paid jump to top
+    return [...filtered].sort((a, b) => {
+      const aVal = data[a.id]?.[currentMonth] || 0;
+      const bVal = data[b.id]?.[currentMonth] || 0;
+      if (aVal > 0 && bVal === 0) return -1;
+      if (aVal === 0 && bVal > 0) return 1;
+      return 0; // Maintain original relative order for same status
+    });
   }, [searchQuery, statusFilter, data, currentMonth]);
+
+  // Master List Sorting: Original Family Order Preserved
+  const masterListContributors = useMemo(() => {
+    return CONTRIBUTORS.filter(person => {
+      return person.name.toLowerCase().includes(searchQuery.toLowerCase());
+    });
+  }, [searchQuery]);
 
   const stats = useMemo(() => {
     const monthlyTotal = CONTRIBUTORS.reduce((sum, p) => sum + (data[p.id]?.[currentMonth] || 0), 0);
@@ -180,15 +197,29 @@ const App = () => {
     }
   };
 
-  const exportMonthlyCSV = () => {
-    const header = "Name,Month,Amount (NGN)\n";
-    const rows = CONTRIBUTORS.map(person => 
-      `"${person.name}",${currentMonth},${data[person.id]?.[currentMonth] || 0}`
-    ).join("\n");
+  const exportData = () => {
+    let header, rows, fileName;
+
+    if (viewMode === 'dashboard') {
+      header = "Name,Month,Amount (NGN)\n";
+      rows = CONTRIBUTORS.map(person => 
+        `"${person.name}",${currentMonth},${data[person.id]?.[currentMonth] || 0}`
+      ).join("\n");
+      fileName = `MBello_Monthly_${currentMonth}.csv`;
+    } else {
+      header = "Name," + MONTHS.join(",") + ",Annual Total (NGN)\n";
+      rows = CONTRIBUTORS.map(person => {
+        const rowData = MONTHS.map(m => data[person.id]?.[m] || 0);
+        const annualTotal = rowData.reduce((s, v) => s + v, 0);
+        return `"${person.name}",${rowData.join(",")},${annualTotal}`;
+      }).join("\n");
+      fileName = `MBello_Master_Annual_2024.csv`;
+    }
+
     const blob = new Blob([header + rows], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
-    link.download = `MBello_Family_${currentMonth}.csv`;
+    link.download = fileName;
     link.click();
     showToast("CSV Exported successfully");
   };
@@ -343,19 +374,19 @@ const App = () => {
               ))}
             </div>
              <button 
-              onClick={exportMonthlyCSV}
+              onClick={exportData}
               className="flex items-center justify-center gap-2 bg-white text-slate-700 px-5 py-3 rounded-xl border border-slate-200 font-bold text-xs sm:text-sm hover:bg-slate-50 transition-all active:scale-95 shadow-sm"
             >
               <Download className="h-4 w-4" />
-              <span className="hidden xs:inline">Export CSV</span>
+              <span className="hidden xs:inline">{viewMode === 'dashboard' ? 'Monthly CSV' : 'Master CSV'}</span>
             </button>
           </div>
         </div>
 
         {viewMode === 'dashboard' ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredContributors.length > 0 ? (
-              filteredContributors.map(person => {
+            {dashboardContributors.length > 0 ? (
+              dashboardContributors.map(person => {
                 const amount = data[person.id]?.[currentMonth] || 0;
                 const isPaid = amount > 0;
                 return (
@@ -405,7 +436,7 @@ const App = () => {
           <div className="relative bg-white rounded-[1.5rem] sm:rounded-[2rem] border border-slate-100 shadow-xl overflow-hidden group">
             <div className="absolute top-4 right-6 flex items-center gap-2 text-[10px] font-bold text-indigo-400 sm:hidden animate-pulse pointer-events-none">
               <ChevronsLeftRight className="h-3 w-3" />
-              <span></span>
+              <span>Scroll for months</span>
             </div>
             <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-slate-200">
               <table className="w-full text-left border-collapse min-w-[800px] sm:min-w-[1200px]">
@@ -425,7 +456,7 @@ const App = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-50">
-                  {filteredContributors.map(person => {
+                  {masterListContributors.map(person => {
                     const annual = MONTHS.reduce((sum, m) => sum + (data[person.id]?.[m] || 0), 0);
                     return (
                       <tr key={person.id} className="hover:bg-slate-50 transition-colors group/row">
