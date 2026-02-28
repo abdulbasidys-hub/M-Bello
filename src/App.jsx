@@ -244,7 +244,7 @@ const App = () => {
                 <Users className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
               </div>
               <div>
-                <h1 className="text-lg sm:text-xl font-extrabold tracking-tight text-slate-900 leading-none">M BELLO'S</h1>
+                <h1 className="text-lg sm:text-xl font-extrabold tracking-tight text-slate-900 leading-none">A YAKASAI</h1>
                 <p className="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-widest">Family Ledger</p>
               </div>
             </div>
