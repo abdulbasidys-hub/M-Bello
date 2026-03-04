@@ -8,7 +8,7 @@ import {
   UserPlus, Trash2, Edit3, Save, Moon, Sun, Shield, AlertTriangle,
   Check, Settings, ChevronLeft, X, Lock, Unlock, ArrowDownRight,
   Receipt, Plus, Tag, TrendingDown, Scale, Clock, AlignLeft,
-  LogOut, SlidersHorizontal, ArrowUpDown, CreditCard, PieChart
+  LogOut, SlidersHorizontal, ArrowUpDown
 } from 'lucide-react';
 
 const _fbc = {
@@ -93,12 +93,48 @@ const T = {
   }
 };
 
+// ── STABLE COMPONENTS (defined outside App so React never remounts them) ──
+
 function Toast({ toast, t }) {
   return (
     <div style={{ position:'fixed', top:16, right:16, zIndex:100, maxWidth:'calc(100vw - 32px)' }}>
       <div style={{ display:'flex', alignItems:'center', gap:9, padding:'11px 16px', borderRadius:14, background:toast.type==='error'?t.roseLight:t.emeraldLight, border:`1px solid ${toast.type==='error'?t.rose+'44':t.emerald+'44'}`, color:toast.type==='error'?t.rose:t.emerald, fontSize:13, fontWeight:600, boxShadow:t.shMd }}>
         {toast.type==='error' ? <XCircle size={15}/> : <CheckCircle size={15}/>}
         <span style={{ overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{toast.msg}</span>
+      </div>
+    </div>
+  );
+}
+
+function Sheet({ onClose, surface, shLg, children }) {
+  return (
+    <div
+      style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.65)', backdropFilter:'blur(10px)', zIndex:60, display:'flex', alignItems:'flex-end', justifyContent:'center' }}
+      onClick={e => e.target === e.currentTarget && onClose()}
+    >
+      <div className="su" style={{ background:surface, borderRadius:'22px 22px 0 0', width:'100%', maxWidth:520, boxShadow:shLg }}>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function SheetHeader({ gradient, icon: Icon, title, subtitle, onClose }) {
+  return (
+    <div style={{ background:gradient, padding:'20px 20px 16px', borderRadius:'22px 22px 0 0' }}>
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+        <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+          <div style={{ width:38, height:38, borderRadius:10, background:'rgba(255,255,255,0.15)', display:'flex', alignItems:'center', justifyContent:'center' }}>
+            <Icon size={17} color="#fff"/>
+          </div>
+          <div>
+            <div style={{ fontFamily:"'Outfit',sans-serif", fontSize:16, fontWeight:800, color:'#fff', lineHeight:1 }}>{title}</div>
+            <div style={{ fontSize:11, color:'rgba(255,255,255,0.7)', marginTop:2 }}>{subtitle}</div>
+          </div>
+        </div>
+        <button onClick={onClose} style={{ width:28, height:28, borderRadius:8, display:'flex', alignItems:'center', justifyContent:'center', background:'rgba(255,255,255,0.15)', border:'none', cursor:'pointer', color:'#fff' }}>
+          <X size={14}/>
+        </button>
       </div>
     </div>
   );
@@ -263,7 +299,6 @@ export default function App() {
     } catch { toast$('Failed to remove', 'error'); }
   };
 
-  // ── SORTING LOGIC ──
   const dashList = useMemo(() => {
     const filtered = members.filter(p => {
       const ms = p.name.toLowerCase().includes(search.toLowerCase());
@@ -315,7 +350,7 @@ export default function App() {
       const d = new Date(e.date);
       return MONTHS[d.getMonth()] === month && d.getFullYear() === new Date().getFullYear();
     }).reduce((s, e) => s + (e.amount || 0), 0);
-    return { mTotal, paid, annual, total:members.length, totalExpenses, monthExpenses, balance: annual - totalExpenses };
+    return { mTotal, paid, annual, total:members.length, totalExpenses, monthExpenses, balance:annual - totalExpenses };
   }, [members, data, month, expenses]);
 
   const pct = stats.total ? Math.round(stats.paid / stats.total * 100) : 0;
@@ -366,32 +401,7 @@ export default function App() {
     .rh:hover{background:${t.surfaceAlt}!important}
   `;
 
-  // ── SHEET COMPONENTS ──
-  const Sheet = ({ onClose, children }) => (
-    <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.65)', backdropFilter:'blur(10px)', zIndex:60, display:'flex', alignItems:'flex-end', justifyContent:'center' }}
-      onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="su" style={{ background:t.surface, borderRadius:'22px 22px 0 0', width:'100%', maxWidth:520, boxShadow:t.shLg }}>
-        {children}
-      </div>
-    </div>
-  );
-
-  const SheetHeader = ({ gradient, icon:Icon, title, subtitle, onClose }) => (
-    <div style={{ background:gradient, padding:'20px 20px 16px', borderRadius:'22px 22px 0 0' }}>
-      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
-        <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-          <div style={{ width:38, height:38, borderRadius:10, background:'rgba(255,255,255,0.15)', display:'flex', alignItems:'center', justifyContent:'center' }}><Icon size={17} color="#fff"/></div>
-          <div>
-            <div style={{ fontFamily:"'Outfit',sans-serif", fontSize:16, fontWeight:800, color:'#fff', lineHeight:1 }}>{title}</div>
-            <div style={{ fontSize:11, color:'rgba(255,255,255,0.7)', marginTop:2 }}>{subtitle}</div>
-          </div>
-        </div>
-        <button onClick={onClose} style={{ width:28, height:28, borderRadius:8, display:'flex', alignItems:'center', justifyContent:'center', background:'rgba(255,255,255,0.15)', border:'none', cursor:'pointer', color:'#fff' }}><X size={14}/></button>
-      </div>
-    </div>
-  );
-
-  // ── MANAGE VIEW ──
+  // ── MANAGE MEMBERS VIEW ──
   if (manageView && role === 'superadmin') {
     return (
       <div style={{ minHeight:'100vh', background:t.bg, color:t.text, fontFamily:"'DM Sans',sans-serif", display:'flex', flexDirection:'column', overflowX:'hidden' }}>
@@ -399,12 +409,16 @@ export default function App() {
         {toast && <Toast toast={toast} t={t}/>}
         <header style={{ background:t.headerBg, borderBottom:`1px solid ${t.border}`, position:'sticky', top:0, zIndex:40, boxShadow:t.sh }}>
           <div style={{ maxWidth:900, margin:'0 auto', padding:'0 16px', display:'flex', alignItems:'center', gap:12, height:60 }}>
-            <button onClick={() => setManageView(false)} className="bp" style={{ width:36, height:36, borderRadius:10, display:'flex', alignItems:'center', justifyContent:'center', border:`1px solid ${t.border}`, background:t.surface, cursor:'pointer', color:t.textMed, flexShrink:0 }}><ChevronLeft size={17}/></button>
+            <button onClick={() => setManageView(false)} className="bp" style={{ width:36, height:36, borderRadius:10, display:'flex', alignItems:'center', justifyContent:'center', border:`1px solid ${t.border}`, background:t.surface, cursor:'pointer', color:t.textMed, flexShrink:0 }}>
+              <ChevronLeft size={17}/>
+            </button>
             <div style={{ flex:1, minWidth:0 }}>
               <div style={{ fontFamily:"'Outfit',sans-serif", fontWeight:800, fontSize:16, color:t.text, lineHeight:1 }}>Manage Members</div>
               <div style={{ fontSize:10, color:t.textMuted, marginTop:2 }}>{members.length} total members</div>
             </div>
-            <button onClick={() => setAddModal(true)} className="bp" style={{ display:'flex', alignItems:'center', gap:6, height:36, padding:'0 14px', borderRadius:10, border:`1px solid ${t.amber}55`, background:t.amberLight, color:t.amber, fontSize:13, fontWeight:700, cursor:'pointer', flexShrink:0, whiteSpace:'nowrap' }}><UserPlus size={14}/>Add</button>
+            <button onClick={() => setAddModal(true)} className="bp" style={{ display:'flex', alignItems:'center', gap:6, height:36, padding:'0 14px', borderRadius:10, border:`1px solid ${t.amber}55`, background:t.amberLight, color:t.amber, fontSize:13, fontWeight:700, cursor:'pointer', flexShrink:0, whiteSpace:'nowrap' }}>
+              <UserPlus size={14}/>Add
+            </button>
           </div>
         </header>
         <div style={{ flex:1, maxWidth:900, margin:'0 auto', width:'100%', padding:'16px 16px 100px' }}>
@@ -427,16 +441,21 @@ export default function App() {
                     <div style={{ fontSize:11, color:t.textMuted, marginTop:2 }}>{annualTotal > 0 ? `₦${annualTotal.toLocaleString()} total` : 'No contributions yet'}</div>
                   </div>
                   <div style={{ display:'flex', gap:7, flexShrink:0 }}>
-                    <button onClick={() => { setEditModal({ id:person.id, name:person.name }); setEditName(person.name); }} className="bp" style={{ width:36, height:36, borderRadius:9, display:'flex', alignItems:'center', justifyContent:'center', border:`1px solid ${t.border}`, background:t.surfaceAlt, cursor:'pointer', color:t.textMed }}><Edit3 size={14}/></button>
-                    <button onClick={() => setDelConfirm(person.id)} className="bp" style={{ width:36, height:36, borderRadius:9, display:'flex', alignItems:'center', justifyContent:'center', border:`1px solid ${t.rose}44`, background:t.roseLight, cursor:'pointer', color:t.rose }}><Trash2 size={14}/></button>
+                    <button onClick={() => { setEditModal({ id:person.id, name:person.name }); setEditName(person.name); }} className="bp" style={{ width:36, height:36, borderRadius:9, display:'flex', alignItems:'center', justifyContent:'center', border:`1px solid ${t.border}`, background:t.surfaceAlt, cursor:'pointer', color:t.textMed }}>
+                      <Edit3 size={14}/>
+                    </button>
+                    <button onClick={() => setDelConfirm(person.id)} className="bp" style={{ width:36, height:36, borderRadius:9, display:'flex', alignItems:'center', justifyContent:'center', border:`1px solid ${t.rose}44`, background:t.roseLight, cursor:'pointer', color:t.rose }}>
+                      <Trash2 size={14}/>
+                    </button>
                   </div>
                 </div>
               );
             })}
           </div>
         </div>
+
         {addModal && (
-          <Sheet onClose={() => { setAddModal(false); setAddName(''); }}>
+          <Sheet onClose={() => { setAddModal(false); setAddName(''); }} surface={t.surface} shLg={t.shLg}>
             <SheetHeader gradient="linear-gradient(135deg,#78350F,#D97706)" icon={UserPlus} title="Add Member" subtitle="Syncs instantly" onClose={() => { setAddModal(false); setAddName(''); }}/>
             <div style={{ padding:'16px 20px 36px' }}>
               <input style={{ width:'100%', height:46, background:t.surfaceAlt, border:`1.5px solid ${t.border}`, borderRadius:13, padding:'0 15px', fontSize:14, fontWeight:500, color:t.text, outline:'none', textTransform:'uppercase' }} className="rf" placeholder="FULL NAME" value={addName} onChange={e => setAddName(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleAdd()} autoFocus/>
@@ -448,7 +467,7 @@ export default function App() {
           </Sheet>
         )}
         {editModal && (
-          <Sheet onClose={() => setEditModal(null)}>
+          <Sheet onClose={() => setEditModal(null)} surface={t.surface} shLg={t.shLg}>
             <SheetHeader gradient="linear-gradient(135deg,#0F3460,#1A6BAE)" icon={Edit3} title="Edit Name" subtitle="Updates everywhere" onClose={() => setEditModal(null)}/>
             <div style={{ padding:'16px 20px 36px' }}>
               <input style={{ width:'100%', height:46, background:t.surfaceAlt, border:`1.5px solid ${t.border}`, borderRadius:13, padding:'0 15px', fontSize:14, fontWeight:500, color:t.text, outline:'none', textTransform:'uppercase' }} className="rf" value={editName} onChange={e => setEditName(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleEdit()} autoFocus/>
@@ -460,7 +479,7 @@ export default function App() {
           </Sheet>
         )}
         {delConfirm && (
-          <Sheet onClose={() => setDelConfirm(null)}>
+          <Sheet onClose={() => setDelConfirm(null)} surface={t.surface} shLg={t.shLg}>
             <div style={{ padding:'28px 20px 40px', textAlign:'center' }}>
               <div style={{ width:52, height:52, borderRadius:99, background:t.roseLight, display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 14px' }}><AlertTriangle size={22} color={t.rose}/></div>
               <div style={{ fontFamily:"'Outfit',sans-serif", fontSize:18, fontWeight:800, color:t.text, marginBottom:8 }}>Remove Member?</div>
@@ -488,20 +507,29 @@ export default function App() {
         {toast && <Toast toast={toast} t={t}/>}
         <header style={{ background:t.headerBg, borderBottom:`1px solid ${t.border}`, position:'sticky', top:0, zIndex:40, boxShadow:t.sh }}>
           <div style={{ maxWidth:900, margin:'0 auto', padding:'0 16px', display:'flex', alignItems:'center', gap:12, height:60 }}>
-            <button onClick={() => setExpenseView(false)} className="bp" style={{ width:36, height:36, borderRadius:10, display:'flex', alignItems:'center', justifyContent:'center', border:`1px solid ${t.border}`, background:t.surface, cursor:'pointer', color:t.textMed, flexShrink:0 }}><ChevronLeft size={17}/></button>
+            <button onClick={() => setExpenseView(false)} className="bp" style={{ width:36, height:36, borderRadius:10, display:'flex', alignItems:'center', justifyContent:'center', border:`1px solid ${t.border}`, background:t.surface, cursor:'pointer', color:t.textMed, flexShrink:0 }}>
+              <ChevronLeft size={17}/>
+            </button>
             <div style={{ flex:1, minWidth:0 }}>
               <div style={{ fontFamily:"'Outfit',sans-serif", fontWeight:800, fontSize:16, color:t.text, lineHeight:1 }}>Expenses</div>
               <div style={{ fontSize:10, color:t.textMuted, marginTop:2 }}>₦{stats.totalExpenses.toLocaleString()} total outgoing</div>
             </div>
-            <button onClick={exportCSV} className="bp" style={{ display:'flex', alignItems:'center', gap:6, height:36, padding:'0 12px', borderRadius:10, border:`1px solid ${t.border}`, background:t.surface, color:t.textMed, fontSize:12, fontWeight:600, cursor:'pointer', flexShrink:0 }}><Download size={13}/>CSV</button>
-            {role && <button onClick={() => setExpenseModal(true)} className="bp" style={{ display:'flex', alignItems:'center', gap:6, height:36, padding:'0 14px', borderRadius:10, border:`1px solid ${t.rose}55`, background:t.roseLight, color:t.rose, fontSize:13, fontWeight:700, cursor:'pointer', flexShrink:0, whiteSpace:'nowrap' }}><Plus size={14}/>Add</button>}
+            <button onClick={exportCSV} className="bp" style={{ display:'flex', alignItems:'center', gap:6, height:36, padding:'0 12px', borderRadius:10, border:`1px solid ${t.border}`, background:t.surface, color:t.textMed, fontSize:12, fontWeight:600, cursor:'pointer', flexShrink:0 }}>
+              <Download size={13}/>CSV
+            </button>
+            {role && (
+              <button onClick={() => setExpenseModal(true)} className="bp" style={{ display:'flex', alignItems:'center', gap:6, height:36, padding:'0 14px', borderRadius:10, border:`1px solid ${t.rose}55`, background:t.roseLight, color:t.rose, fontSize:13, fontWeight:700, cursor:'pointer', flexShrink:0, whiteSpace:'nowrap' }}>
+                <Plus size={14}/>Add
+              </button>
+            )}
           </div>
         </header>
+
         <div style={{ flex:1, maxWidth:900, margin:'0 auto', width:'100%', padding:'16px 16px 100px' }}>
           <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:10, marginBottom:18 }}>
             {[
-              { label:'Total In', val:stats.annual, from:t.emerald, to:'#059669', Icon:TrendingUp },
-              { label:'Total Out', val:stats.totalExpenses, from:t.rose, to:'#E11D48', Icon:TrendingDown },
+              { label:'Total In',  val:stats.annual,        from:t.emerald, to:'#059669',  Icon:TrendingUp   },
+              { label:'Total Out', val:stats.totalExpenses,  from:t.rose,   to:'#E11D48',  Icon:TrendingDown  },
               { label:stats.balance >= 0 ? 'Balance' : 'Deficit', val:Math.abs(stats.balance), from:stats.balance >= 0 ? t.accent : '#DC2626', to:stats.balance >= 0 ? '#7C3AED' : '#991B1B', Icon:Scale },
             ].map(({ label, val, from, to, Icon }) => (
               <div key={label} style={{ background:`linear-gradient(135deg,${from},${to})`, borderRadius:16, padding:'13px 12px', boxShadow:`0 6px 20px ${from}44` }}>
@@ -511,6 +539,7 @@ export default function App() {
               </div>
             ))}
           </div>
+
           {catTotals.length > 0 && (
             <div style={{ background:t.surface, border:`1px solid ${t.border}`, borderRadius:16, padding:'14px 16px', marginBottom:16, boxShadow:t.sh }}>
               <div style={{ fontSize:11, fontWeight:700, color:t.textMuted, textTransform:'uppercase', letterSpacing:'0.1em', marginBottom:12 }}>By Category</div>
@@ -532,6 +561,7 @@ export default function App() {
               </div>
             </div>
           )}
+
           <div style={{ background:t.surface, border:`1px solid ${t.border}`, borderRadius:16, overflow:'hidden', boxShadow:t.sh }}>
             {expenses.length === 0 ? (
               <div style={{ padding:'52px 20px', textAlign:'center', color:t.textMuted, display:'flex', flexDirection:'column', alignItems:'center', gap:12 }}>
@@ -552,15 +582,18 @@ export default function App() {
                 <div style={{ display:'flex', alignItems:'center', gap:8, flexShrink:0 }}>
                   <div style={{ fontFamily:"'Outfit',sans-serif", fontSize:14, fontWeight:800, color:t.rose }}>₦{exp.amount.toLocaleString()}</div>
                   {role === 'superadmin' && (
-                    <button onClick={() => setExpDelConfirm(exp.id)} className="bp" style={{ width:30, height:30, borderRadius:8, display:'flex', alignItems:'center', justifyContent:'center', border:`1px solid ${t.rose}44`, background:t.roseLight, cursor:'pointer', color:t.rose }}><Trash2 size={12}/></button>
+                    <button onClick={() => setExpDelConfirm(exp.id)} className="bp" style={{ width:30, height:30, borderRadius:8, display:'flex', alignItems:'center', justifyContent:'center', border:`1px solid ${t.rose}44`, background:t.roseLight, cursor:'pointer', color:t.rose }}>
+                      <Trash2 size={12}/>
+                    </button>
                   )}
                 </div>
               </div>
             ))}
           </div>
         </div>
+
         {expenseModal && (
-          <Sheet onClose={() => setExpenseModal(false)}>
+          <Sheet onClose={() => setExpenseModal(false)} surface={t.surface} shLg={t.shLg}>
             <SheetHeader gradient="linear-gradient(135deg,#9F1239,#F43F5E)" icon={Receipt} title="Log Expense" subtitle="Deducted from balance" onClose={() => setExpenseModal(false)}/>
             <div style={{ padding:'16px 20px 36px', display:'flex', flexDirection:'column', gap:10 }}>
               <input style={{ width:'100%', height:46, background:t.surfaceAlt, border:`1.5px solid ${t.border}`, borderRadius:13, padding:'0 15px', fontSize:14, fontWeight:500, color:t.text, outline:'none' }} className="rf" placeholder="Description (e.g. Eid food supplies)" value={expForm.description} onChange={e => setExpForm(f => ({ ...f, description:e.target.value }))} autoFocus/>
@@ -579,13 +612,16 @@ export default function App() {
               </div>
               <div style={{ display:'flex', gap:9, marginTop:4 }}>
                 <button onClick={() => setExpenseModal(false)} style={{ flex:1, height:46, borderRadius:13, background:'transparent', color:t.textMed, fontSize:14, fontWeight:600, border:`1px solid ${t.border}`, cursor:'pointer' }}>Cancel</button>
-                <button onClick={handleAddExpense} style={{ flex:2, height:46, borderRadius:13, background:'linear-gradient(135deg,#9F1239,#F43F5E)', color:'#fff', fontSize:14, fontWeight:700, border:'none', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:7 }}><Receipt size={15}/>Record Expense</button>
+                <button onClick={handleAddExpense} style={{ flex:2, height:46, borderRadius:13, background:'linear-gradient(135deg,#9F1239,#F43F5E)', color:'#fff', fontSize:14, fontWeight:700, border:'none', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:7 }}>
+                  <Receipt size={15}/>Record Expense
+                </button>
               </div>
             </div>
           </Sheet>
         )}
+
         {expDelConfirm && (
-          <Sheet onClose={() => setExpDelConfirm(null)}>
+          <Sheet onClose={() => setExpDelConfirm(null)} surface={t.surface} shLg={t.shLg}>
             <div style={{ padding:'28px 20px 40px', textAlign:'center' }}>
               <div style={{ width:52, height:52, borderRadius:99, background:t.roseLight, display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 14px' }}><AlertTriangle size={22} color={t.rose}/></div>
               <div style={{ fontFamily:"'Outfit',sans-serif", fontSize:18, fontWeight:800, color:t.text, marginBottom:8 }}>Remove Expense?</div>
@@ -609,30 +645,42 @@ export default function App() {
       <style>{css}</style>
       {toast && <Toast toast={toast} t={t}/>}
 
-      {/* HEADER */}
+      {/* ── HEADER ── */}
       <header style={{ background:t.headerBg, borderBottom:`1px solid ${t.border}`, position:'sticky', top:0, zIndex:40, boxShadow:t.sh }}>
         <div style={{ maxWidth:1300, margin:'0 auto', padding:'0 16px', display:'flex', alignItems:'center', justifyContent:'space-between', height:60, gap:8, overflow:'hidden' }}>
           <div style={{ display:'flex', alignItems:'center', gap:9, flexShrink:0 }}>
-            <div style={{ width:36, height:36, borderRadius:10, background:`linear-gradient(135deg,${t.accent},#7C3AED)`, display:'flex', alignItems:'center', justifyContent:'center', boxShadow:`0 4px 12px ${t.accent}45`, flexShrink:0 }}><Users size={16} color="#fff"/></div>
+            <div style={{ width:36, height:36, borderRadius:10, background:`linear-gradient(135deg,${t.accent},#7C3AED)`, display:'flex', alignItems:'center', justifyContent:'center', boxShadow:`0 4px 12px ${t.accent}45`, flexShrink:0 }}>
+              <Users size={16} color="#fff"/>
+            </div>
             <div>
               <div style={{ fontFamily:"'Outfit',sans-serif", fontWeight:800, fontSize:15, color:t.text, letterSpacing:'-0.3px', lineHeight:1, whiteSpace:'nowrap' }}>A YAKASAI</div>
               <div style={{ fontSize:8, fontWeight:700, color:t.textMuted, letterSpacing:'0.12em', textTransform:'uppercase', marginTop:2, whiteSpace:'nowrap' }}>Family Ledger</div>
             </div>
           </div>
+
           <div style={{ display:'flex', gap:3, background:t.surfaceAlt, border:`1px solid ${t.border}`, borderRadius:11, padding:3, flexShrink:0 }}>
             {[['dashboard','Monthly',LayoutGrid],['master','Master',FileText]].map(([id,lbl,Icon]) => (
-              <button key={id} onClick={() => setView(id)} className="bp" style={{ display:'flex', alignItems:'center', gap:6, padding:'6px 12px', borderRadius:8, fontSize:12, fontWeight:600, cursor:'pointer', border:'none', background:view===id?t.surface:'transparent', color:view===id?t.accent:t.textMed, boxShadow:view===id?t.sh:'none', transition:'all .15s', whiteSpace:'nowrap' }}><Icon size={13}/>{lbl}</button>
+              <button key={id} onClick={() => setView(id)} className="bp" style={{ display:'flex', alignItems:'center', gap:6, padding:'6px 12px', borderRadius:8, fontSize:12, fontWeight:600, cursor:'pointer', border:'none', background:view===id?t.surface:'transparent', color:view===id?t.accent:t.textMed, boxShadow:view===id?t.sh:'none', transition:'all .15s', whiteSpace:'nowrap' }}>
+                <Icon size={13}/>{lbl}
+              </button>
             ))}
           </div>
+
           <div style={{ display:'flex', alignItems:'center', gap:7, flexShrink:0 }}>
-            <button onClick={() => setDark(d => !d)} className="bp" style={{ width:34, height:34, borderRadius:9, display:'flex', alignItems:'center', justifyContent:'center', border:`1px solid ${t.border}`, background:t.surface, cursor:'pointer', color:t.textMed }}>{dark ? <Sun size={15}/> : <Moon size={15}/>}</button>
+            <button onClick={() => setDark(d => !d)} className="bp" style={{ width:34, height:34, borderRadius:9, display:'flex', alignItems:'center', justifyContent:'center', border:`1px solid ${t.border}`, background:t.surface, cursor:'pointer', color:t.textMed }}>
+              {dark ? <Sun size={15}/> : <Moon size={15}/>}
+            </button>
             {role === 'superadmin' && (
-              <button onClick={() => setManageView(true)} className="bp" style={{ display:'flex', alignItems:'center', gap:6, height:34, padding:'0 11px', borderRadius:9, border:`1px solid ${t.amber}55`, background:t.amberLight, color:t.amber, fontSize:12, fontWeight:700, cursor:'pointer', whiteSpace:'nowrap' }}><Settings size={13}/>Manage</button>
+              <button onClick={() => setManageView(true)} className="bp" style={{ display:'flex', alignItems:'center', gap:6, height:34, padding:'0 11px', borderRadius:9, border:`1px solid ${t.amber}55`, background:t.amberLight, color:t.amber, fontSize:12, fontWeight:700, cursor:'pointer', whiteSpace:'nowrap' }}>
+                <Settings size={13}/>Manage
+              </button>
             )}
             {role && (
               <div style={{ display:'flex', alignItems:'center', gap:5, background:role==='superadmin'?t.amberLight:t.emeraldLight, border:`1px solid ${role==='superadmin'?t.amber+'44':t.emerald+'44'}`, borderRadius:9, padding:'5px 9px' }}>
                 <div className="pl" style={{ width:6, height:6, borderRadius:99, background:role==='superadmin'?t.amber:t.emerald, flexShrink:0 }}/>
-                <button onClick={() => { setRole(null); toast$('Signed out'); }} style={{ border:'none', background:'none', color:t.textMuted, cursor:'pointer', display:'flex', padding:0 }}><XCircle size={13}/></button>
+                <button onClick={() => { setRole(null); toast$('Signed out'); }} style={{ border:'none', background:'none', color:t.textMuted, cursor:'pointer', display:'flex', padding:0 }}>
+                  <XCircle size={13}/>
+                </button>
               </div>
             )}
           </div>
@@ -641,19 +689,23 @@ export default function App() {
 
       <main style={{ maxWidth:1300, margin:'0 auto', padding:'16px 14px 120px', width:'100%' }}>
 
-        {/* BALANCE HERO */}
+        {/* ── BALANCE HERO ── */}
         <div style={{ background:`linear-gradient(135deg,${stats.balance>=0?t.accent:'#DC2626'} 0%,${stats.balance>=0?'#7C3AED':'#991B1B'} 100%)`, borderRadius:20, padding:'18px 20px', marginBottom:14, boxShadow:`0 10px 36px ${stats.balance>=0?t.accent+'50':'#DC262650'}`, position:'relative', overflow:'hidden' }}>
           <div style={{ position:'absolute', right:-20, top:-20, width:120, height:120, borderRadius:99, background:'rgba(255,255,255,0.06)' }}/>
           <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:12, position:'relative', zIndex:1 }}>
             <div style={{ flex:1, minWidth:0 }}>
               <div style={{ fontSize:10, fontWeight:700, color:'rgba(255,255,255,0.65)', textTransform:'uppercase', letterSpacing:'0.14em', marginBottom:6 }}>Current Balance</div>
-              <div style={{ fontFamily:"'Outfit',sans-serif", fontSize:28, fontWeight:800, color:'#fff', letterSpacing:'-1px', lineHeight:1, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{stats.balance < 0 ? '-' : ''}₦{Math.abs(stats.balance).toLocaleString()}</div>
+              <div style={{ fontFamily:"'Outfit',sans-serif", fontSize:28, fontWeight:800, color:'#fff', letterSpacing:'-1px', lineHeight:1, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                {stats.balance < 0 ? '-' : ''}₦{Math.abs(stats.balance).toLocaleString()}
+              </div>
               <div style={{ display:'flex', gap:14, marginTop:10, flexWrap:'wrap' }}>
                 <div style={{ fontSize:11, color:'rgba(255,255,255,0.7)' }}><span style={{ fontWeight:700, color:'#fff' }}>₦{stats.annual.toLocaleString()}</span> collected</div>
                 <div style={{ fontSize:11, color:'rgba(255,255,255,0.7)' }}><span style={{ fontWeight:700, color:'#FECACA' }}>₦{stats.totalExpenses.toLocaleString()}</span> spent</div>
               </div>
             </div>
-            <button onClick={() => setExpenseView(true)} className="bp" style={{ display:'flex', alignItems:'center', gap:6, height:38, padding:'0 14px', borderRadius:11, background:'rgba(255,255,255,0.15)', border:'1px solid rgba(255,255,255,0.25)', color:'#fff', fontSize:12, fontWeight:700, cursor:'pointer', flexShrink:0, whiteSpace:'nowrap' }}><Receipt size={13}/>Expenses</button>
+            <button onClick={() => setExpenseView(true)} className="bp" style={{ display:'flex', alignItems:'center', gap:6, height:38, padding:'0 14px', borderRadius:11, background:'rgba(255,255,255,0.15)', border:'1px solid rgba(255,255,255,0.25)', color:'#fff', fontSize:12, fontWeight:700, cursor:'pointer', flexShrink:0, whiteSpace:'nowrap' }}>
+              <Receipt size={13}/>Expenses
+            </button>
           </div>
           {stats.annual > 0 && (
             <div style={{ marginTop:14, position:'relative', zIndex:1 }}>
@@ -665,7 +717,7 @@ export default function App() {
           )}
         </div>
 
-        {/* STATS 2x2 */}
+        {/* ── STATS 2×2 ── */}
         <div style={{ display:'grid', gridTemplateColumns:'repeat(2,1fr)', gap:10, marginBottom:18 }}>
           <div className="ch" style={{ background:t.surface, border:`1px solid ${t.border}`, borderRadius:16, padding:'13px 14px', boxShadow:t.sh }}>
             <div style={{ width:34, height:34, borderRadius:9, background:t.accentLight, display:'flex', alignItems:'center', justifyContent:'center', marginBottom:10 }}><Calendar size={15} color={t.accent}/></div>
@@ -689,7 +741,9 @@ export default function App() {
             </div>
             <div style={{ fontFamily:"'Outfit',sans-serif", fontSize:16, fontWeight:800, color:t.text }}>{stats.paid}<span style={{ fontSize:12, color:t.textMuted, fontWeight:600 }}>/{stats.total}</span></div>
             <div style={{ fontSize:9, fontWeight:700, color:t.textMuted, textTransform:'uppercase', letterSpacing:'0.1em', marginTop:4 }}>Paid</div>
-            <div style={{ height:3, borderRadius:99, background:t.border, overflow:'hidden', marginTop:7 }}><div style={{ height:'100%', borderRadius:99, background:t.emerald, width:`${pct}%`, transition:'width .6s ease' }}/></div>
+            <div style={{ height:3, borderRadius:99, background:t.border, overflow:'hidden', marginTop:7 }}>
+              <div style={{ height:'100%', borderRadius:99, background:t.emerald, width:`${pct}%`, transition:'width .6s ease' }}/>
+            </div>
           </div>
           <div className="ch" onClick={() => setExpenseView(true)} style={{ background:t.roseLight, border:`1px solid ${t.rose}33`, borderRadius:16, padding:'13px 14px', boxShadow:t.sh, cursor:'pointer' }}>
             <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:10 }}>
@@ -701,7 +755,7 @@ export default function App() {
           </div>
         </div>
 
-        {/* CONTROLS */}
+        {/* ── CONTROLS ── */}
         <div style={{ display:'flex', flexDirection:'column', gap:9, marginBottom:14 }}>
           <div style={{ position:'relative' }}>
             <Search size={14} color={t.textMuted} style={{ position:'absolute', left:13, top:'50%', transform:'translateY(-50%)', pointerEvents:'none' }}/>
@@ -714,9 +768,13 @@ export default function App() {
               ))}
             </div>
             {role === 'superadmin' && (
-              <button onClick={() => setShowSortSheet(true)} className="bp" style={{ display:'flex', alignItems:'center', gap:6, height:44, padding:'0 13px', borderRadius:12, border:`1.5px solid ${t.accent}55`, background:t.accentLight, color:t.accentText, fontSize:12, fontWeight:700, cursor:'pointer', flexShrink:0, whiteSpace:'nowrap' }}><SlidersHorizontal size={13}/>Sort</button>
+              <button onClick={() => setShowSortSheet(true)} className="bp" style={{ display:'flex', alignItems:'center', gap:6, height:44, padding:'0 13px', borderRadius:12, border:`1.5px solid ${t.accent}55`, background:t.accentLight, color:t.accentText, fontSize:12, fontWeight:700, cursor:'pointer', flexShrink:0, whiteSpace:'nowrap' }}>
+                <SlidersHorizontal size={13}/>Sort
+              </button>
             )}
-            <button onClick={exportCSV} className="bp" style={{ display:'flex', alignItems:'center', gap:6, height:44, padding:'0 14px', borderRadius:12, border:`1px solid ${t.border}`, background:t.surface, color:t.textMed, fontSize:13, fontWeight:600, cursor:'pointer', flexShrink:0, whiteSpace:'nowrap' }}><Download size={14}/>CSV</button>
+            <button onClick={exportCSV} className="bp" style={{ display:'flex', alignItems:'center', gap:6, height:44, padding:'0 14px', borderRadius:12, border:`1px solid ${t.border}`, background:t.surface, color:t.textMed, fontSize:13, fontWeight:600, cursor:'pointer', flexShrink:0, whiteSpace:'nowrap' }}>
+              <Download size={14}/>CSV
+            </button>
           </div>
           {role === 'superadmin' && (
             <div style={{ display:'flex', alignItems:'center', gap:6, padding:'7px 12px', borderRadius:10, background:t.accentLight, border:`1px solid ${t.accent}33` }}>
@@ -726,7 +784,7 @@ export default function App() {
           )}
         </div>
 
-        {/* DASHBOARD CARDS */}
+        {/* ── DASHBOARD CARDS ── */}
         {view === 'dashboard' && (
           <div className="fi" style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(min(100%,270px),1fr))', gap:11 }}>
             {dashList.length === 0 ? (
@@ -743,7 +801,6 @@ export default function App() {
                   <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:11 }}>
                     <div style={{ width:40, height:40, borderRadius:11, display:'flex', alignItems:'center', justifyContent:'center', fontFamily:"'Outfit',sans-serif", fontSize:12, fontWeight:800, background:isPaid?t.emeraldLight:t.surfaceAlt, color:isPaid?t.emerald:t.textMuted, flexShrink:0 }}>{person.initials}</div>
                     <div style={{ flex:1, minWidth:0 }}>
-                      {/* ✅ ID tag completely removed — name only */}
                       <div style={{ fontSize:13, fontWeight:700, color:t.text, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', lineHeight:1.4 }}>{person.name}</div>
                     </div>
                     {isPaid && <div style={{ width:20, height:20, borderRadius:99, background:t.emerald, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}><Check size={11} color="#fff" strokeWidth={3}/></div>}
@@ -767,15 +824,19 @@ export default function App() {
           </div>
         )}
 
-        {/* MASTER TABLE */}
+        {/* ── MASTER TABLE ── */}
         {view === 'master' && (
           <div className="fi" style={{ background:t.surface, borderRadius:16, border:`1px solid ${t.border}`, boxShadow:t.sh, overflowX:'auto', WebkitOverflowScrolling:'touch' }}>
-            <div style={{ padding:'9px 14px 5px', display:'flex', alignItems:'center', gap:6, color:t.textMuted, fontSize:11, fontWeight:600 }}><ChevronsLeftRight size={11}/> Swipe for all months</div>
+            <div style={{ padding:'9px 14px 5px', display:'flex', alignItems:'center', gap:6, color:t.textMuted, fontSize:11, fontWeight:600 }}>
+              <ChevronsLeftRight size={11}/> Swipe for all months
+            </div>
             <table style={{ width:'100%', borderCollapse:'collapse', minWidth:840 }}>
               <thead>
                 <tr>
                   <th style={{ padding:'11px 14px', fontSize:10, fontWeight:700, color:t.textMuted, textTransform:'uppercase', textAlign:'left', borderBottom:`1px solid ${t.border}`, background:t.surfaceAlt, position:'sticky', left:0, zIndex:2, whiteSpace:'nowrap', minWidth:130 }}>Name</th>
-                  {MONTHS.map(m => <th key={m} style={{ padding:'11px 9px', fontSize:10, fontWeight:700, color:m===month?t.accent:t.textMuted, textTransform:'uppercase', textAlign:'right', borderBottom:`1px solid ${t.border}`, background:m===month?`${t.accent}10`:t.surfaceAlt, whiteSpace:'nowrap', minWidth:48 }}>{m.slice(0,3)}</th>)}
+                  {MONTHS.map(m => (
+                    <th key={m} style={{ padding:'11px 9px', fontSize:10, fontWeight:700, color:m===month?t.accent:t.textMuted, textTransform:'uppercase', textAlign:'right', borderBottom:`1px solid ${t.border}`, background:m===month?`${t.accent}10`:t.surfaceAlt, whiteSpace:'nowrap', minWidth:48 }}>{m.slice(0,3)}</th>
+                  ))}
                   <th style={{ padding:'11px 12px', fontSize:10, fontWeight:700, color:t.accentText, textTransform:'uppercase', textAlign:'right', borderBottom:`1px solid ${t.border}`, background:`${t.accent}0E`, position:'sticky', right:0, zIndex:2, whiteSpace:'nowrap', minWidth:72 }}>Total</th>
                 </tr>
               </thead>
@@ -785,7 +846,10 @@ export default function App() {
                   return (
                     <tr key={person.id} className="rh" style={{ background:i%2===0?'transparent':`${t.surfaceAlt}55` }}>
                       <td style={{ padding:'10px 14px', fontSize:12, fontWeight:600, color:t.text, borderBottom:`1px solid ${t.border}`, position:'sticky', left:0, background:i%2===0?t.surface:t.surfaceAlt, zIndex:1, whiteSpace:'nowrap', maxWidth:160, overflow:'hidden', textOverflow:'ellipsis' }}>{person.name}</td>
-                      {MONTHS.map(m => { const v = data[person.id]?.[m] || 0; return <td key={m} style={{ padding:'10px 9px', textAlign:'right', fontSize:11, fontWeight:v>0?600:400, color:v>0?t.emerald:t.textMuted, borderBottom:`1px solid ${t.border}`, background:m===month?`${t.accent}06`:'transparent', whiteSpace:'nowrap' }}>{v>0?`₦${v.toLocaleString()}`:'—'}</td>; })}
+                      {MONTHS.map(m => {
+                        const v = data[person.id]?.[m] || 0;
+                        return <td key={m} style={{ padding:'10px 9px', textAlign:'right', fontSize:11, fontWeight:v>0?600:400, color:v>0?t.emerald:t.textMuted, borderBottom:`1px solid ${t.border}`, background:m===month?`${t.accent}06`:'transparent', whiteSpace:'nowrap' }}>{v>0?`₦${v.toLocaleString()}`:'—'}</td>;
+                      })}
                       <td style={{ padding:'10px 12px', textAlign:'right', fontFamily:"'Outfit',sans-serif", fontSize:12, fontWeight:800, color:t.accentText, borderBottom:`1px solid ${t.border}`, background:`${t.accent}08`, position:'sticky', right:0, zIndex:1, whiteSpace:'nowrap' }}>₦{annual.toLocaleString()}</td>
                     </tr>
                   );
@@ -796,20 +860,25 @@ export default function App() {
         )}
       </main>
 
-      {/* BOTTOM NAV */}
+      {/* ── BOTTOM NAV ── */}
       <div style={{ position:'fixed', bottom:16, left:'50%', transform:'translateX(-50%)', zIndex:50, background:dark?'#1C2333EE':'#0F172AEE', backdropFilter:'blur(16px)', border:'1px solid rgba(255,255,255,0.08)', borderRadius:99, padding:'4px 6px', display:'flex', alignItems:'center', gap:2, boxShadow:'0 8px 32px rgba(0,0,0,0.45)' }}>
         {[['dashboard',LayoutGrid],['master',FileText]].map(([id,Icon]) => (
-          <button key={id} onClick={() => setView(id)} className="bp" style={{ width:42, height:42, borderRadius:99, display:'flex', alignItems:'center', justifyContent:'center', background:view===id?t.accent:'transparent', color:view===id?'#fff':'#94A3B8', border:'none', cursor:'pointer', transition:'all .15s' }}><Icon size={17}/></button>
+          <button key={id} onClick={() => setView(id)} className="bp" style={{ width:42, height:42, borderRadius:99, display:'flex', alignItems:'center', justifyContent:'center', background:view===id?t.accent:'transparent', color:view===id?'#fff':'#94A3B8', border:'none', cursor:'pointer', transition:'all .15s' }}>
+            <Icon size={17}/>
+          </button>
         ))}
-        <button onClick={() => setExpenseView(true)} className="bp" style={{ width:42, height:42, borderRadius:99, display:'flex', alignItems:'center', justifyContent:'center', background:'transparent', color:'#F87171', border:'none', cursor:'pointer' }}><Receipt size={17}/></button>
+        <button onClick={() => setExpenseView(true)} className="bp" style={{ width:42, height:42, borderRadius:99, display:'flex', alignItems:'center', justifyContent:'center', background:'transparent', color:'#F87171', border:'none', cursor:'pointer' }}>
+          <Receipt size={17}/>
+        </button>
         {role === 'superadmin' && (
           <>
             <div style={{ width:1, height:20, background:'rgba(255,255,255,0.12)', margin:'0 2px' }}/>
-            <button onClick={() => setManageView(true)} className="bp" style={{ width:42, height:42, borderRadius:99, display:'flex', alignItems:'center', justifyContent:'center', background:'transparent', color:'#F59E0B', border:'none', cursor:'pointer' }}><Settings size={17}/></button>
+            <button onClick={() => setManageView(true)} className="bp" style={{ width:42, height:42, borderRadius:99, display:'flex', alignItems:'center', justifyContent:'center', background:'transparent', color:'#F59E0B', border:'none', cursor:'pointer' }}>
+              <Settings size={17}/>
+            </button>
           </>
         )}
         <div style={{ width:1, height:20, background:'rgba(255,255,255,0.12)', margin:'0 2px' }}/>
-        {/* ✅ When logged in: opens account sheet with logout. When logged out: opens login */}
         <button onClick={() => role ? setShowAccountSheet(true) : setShowLogin(true)} className="bp" style={{ width:42, height:42, borderRadius:99, display:'flex', alignItems:'center', justifyContent:'center', background:'transparent', color:role?(role==='superadmin'?'#F59E0B':'#10B981'):'#94A3B8', border:'none', cursor:'pointer' }}>
           {role ? <Shield size={17}/> : <Lock size={17}/>}
         </button>
@@ -818,14 +887,18 @@ export default function App() {
         </button>
       </div>
 
-      {/* ✅ LOGIN SHEET — subtitle changed to neutral */}
+      {/* ── LOGIN SHEET ── */}
       {showLogin && (
-        <Sheet onClose={() => setShowLogin(false)}>
+        <Sheet onClose={() => setShowLogin(false)} surface={t.surface} shLg={t.shLg}>
           <SheetHeader gradient="linear-gradient(135deg,#1E1B4B,#4338CA)" icon={Unlock} title="Welcome Back" subtitle="Please sign in to continue" onClose={() => setShowLogin(false)}/>
           <div style={{ padding:'16px 20px 36px', display:'flex', flexDirection:'column', gap:10 }}>
             <input style={{ width:'100%', height:46, background:t.surfaceAlt, border:`1.5px solid ${t.border}`, borderRadius:13, padding:'0 15px', fontSize:14, fontWeight:500, color:t.text, outline:'none' }} className="rf" placeholder="Username" value={lf.u} onChange={e => { setLf(f => ({ ...f, u:e.target.value })); setLoginErr(''); }} autoComplete="off" onKeyDown={e => e.key === 'Enter' && doLogin()}/>
             <input type="password" style={{ width:'100%', height:46, background:t.surfaceAlt, border:`1.5px solid ${t.border}`, borderRadius:13, padding:'0 15px', fontSize:14, fontWeight:500, color:t.text, outline:'none' }} className="rf" placeholder="Password" value={lf.p} onChange={e => { setLf(f => ({ ...f, p:e.target.value })); setLoginErr(''); }} autoComplete="off" onKeyDown={e => e.key === 'Enter' && doLogin()}/>
-            {loginErr && <div style={{ display:'flex', alignItems:'center', gap:7, color:t.rose, fontSize:13, fontWeight:600 }}><XCircle size={14}/>{loginErr}</div>}
+            {loginErr && (
+              <div style={{ display:'flex', alignItems:'center', gap:7, color:t.rose, fontSize:13, fontWeight:600 }}>
+                <XCircle size={14}/>{loginErr}
+              </div>
+            )}
             <div style={{ display:'flex', gap:9, marginTop:4 }}>
               <button onClick={() => setShowLogin(false)} style={{ flex:1, height:46, borderRadius:13, background:'transparent', color:t.textMed, fontSize:14, fontWeight:600, border:`1px solid ${t.border}`, cursor:'pointer' }}>Cancel</button>
               <button onClick={doLogin} style={{ flex:1, height:46, borderRadius:13, background:t.accent, color:'#fff', fontSize:14, fontWeight:700, border:'none', cursor:'pointer', boxShadow:`0 4px 12px ${t.accent}44` }}>Sign In</button>
@@ -834,9 +907,9 @@ export default function App() {
         </Sheet>
       )}
 
-      {/* ✅ ACCOUNT SHEET — shown when already logged in, has logout button */}
+      {/* ── ACCOUNT SHEET ── */}
       {showAccountSheet && (
-        <Sheet onClose={() => setShowAccountSheet(false)}>
+        <Sheet onClose={() => setShowAccountSheet(false)} surface={t.surface} shLg={t.shLg}>
           <div style={{ background:role==='superadmin'?'linear-gradient(135deg,#78350F,#D97706)':'linear-gradient(135deg,#064E3B,#10B981)', padding:'20px 20px 18px', borderRadius:'22px 22px 0 0' }}>
             <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
               <div style={{ display:'flex', alignItems:'center', gap:11 }}>
@@ -864,9 +937,9 @@ export default function App() {
         </Sheet>
       )}
 
-      {/* ✅ SORT SHEET — superadmin only */}
+      {/* ── SORT SHEET ── */}
       {showSortSheet && (
-        <Sheet onClose={() => setShowSortSheet(false)}>
+        <Sheet onClose={() => setShowSortSheet(false)} surface={t.surface} shLg={t.shLg}>
           <SheetHeader gradient={`linear-gradient(135deg,#312E81,${t.accent})`} icon={SlidersHorizontal} title="Sort Order" subtitle="Choose how members are arranged" onClose={() => setShowSortSheet(false)}/>
           <div style={{ padding:'12px 16px 32px', display:'flex', flexDirection:'column', gap:8 }}>
             {SORT_OPTIONS.map(opt => {
@@ -874,7 +947,9 @@ export default function App() {
               const active = sortMode === opt.id;
               return (
                 <button key={opt.id} onClick={() => { setSortMode(opt.id); setShowSortSheet(false); }} className="bp" style={{ display:'flex', alignItems:'center', gap:13, padding:'13px 14px', borderRadius:14, border:`1.5px solid ${active?t.accent:t.border}`, background:active?t.accentLight:'transparent', cursor:'pointer', textAlign:'left', width:'100%', transition:'all .15s' }}>
-                  <div style={{ width:36, height:36, borderRadius:10, background:active?t.accent:t.surfaceAlt, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, transition:'background .15s' }}><Icon size={16} color={active?'#fff':t.textMuted}/></div>
+                  <div style={{ width:36, height:36, borderRadius:10, background:active?t.accent:t.surfaceAlt, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, transition:'background .15s' }}>
+                    <Icon size={16} color={active?'#fff':t.textMuted}/>
+                  </div>
                   <div style={{ flex:1, minWidth:0 }}>
                     <div style={{ fontSize:13, fontWeight:700, color:active?t.accentText:t.text, lineHeight:1.2 }}>{opt.label}</div>
                     <div style={{ fontSize:11, color:t.textMuted, marginTop:3 }}>{opt.desc}</div>
